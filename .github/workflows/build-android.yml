@@ -3,14 +3,14 @@ name: Build KAIROS Android APK
 on:
   push:
     branches: [master]
-  workflow_dispatch:  # allows manual trigger from GitHub website
+  workflow_dispatch:
 
 jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -22,42 +22,49 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Setup Expo + EAS
+      - name: Setup EAS
         uses: expo/expo-github-action@v8
         with:
-          expo-version: latest
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build Android APK (Preview profile)
-        run: eas build --platform android --profile preview --non-interactive --output ./kairos-latest.apk
+      - name: Build Android APK
+        id: build
+        run: |
+          BUILD_URL=$(eas build --platform android --profile preview --non-interactive --json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['artifacts']['buildUrl'] if isinstance(data, list) else data.get('artifacts',{}).get('buildUrl',''))" 2>/dev/null || echo "")
+          if [ -z "$BUILD_URL" ]; then
+            eas build --platform android --profile preview --non-interactive --output kairos.apk
+          else
+            curl -L "$BUILD_URL" -o kairos.apk
+          fi
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Upload APK as artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: kairos-android-apk
-          path: ./kairos-latest.apk
+          path: kairos.apk
           retention-days: 90
 
-      - name: Create GitHub Release with APK
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}
-          name: "KAIROS v${{ github.run_number }}"
+          tag_name: build-${{ github.run_number }}
+          name: "KAIROS Build ${{ github.run_number }}"
           body: |
             ## KAIROS — Personal Intelligence System
 
-            ### Installation auf Android:
-            1. Lade `kairos-android.apk` herunter
-            2. Öffne die Datei auf deinem Telefon
-            3. Tippe auf "Installieren" (ggf. "Aus unbekannten Quellen" erlauben)
-            4. KAIROS ist installiert — kein Computer mehr nötig!
+            ### Android installieren (APK):
+            1. Lade **kairos.apk** unten herunter (direkt auf dem Handy öffnen)
+            2. Tippe auf „Installieren" — ggf. **„Aus unbekannten Quellen erlauben"** in den Android-Einstellungen aktivieren
+            3. App öffnen — kein Computer mehr nötig!
 
-            ### Änderungen in dieser Version:
-            Automatisch erstellt beim Push auf GitHub.
-          files: ./kairos-latest.apk
+            ### Install on Android:
+            1. Download **kairos.apk** below (open directly on your phone)
+            2. Tap Install — you may need to enable **"Install from unknown sources"** in Android Settings
+            3. Open the app — no computer needed ever again!
+          files: kairos.apk
           draft: false
           prerelease: false
         env:
