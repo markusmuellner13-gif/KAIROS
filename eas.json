@@ -20,14 +20,6 @@
       "android": { "buildType": "app-bundle" }
     }
   },
-  "update": {
-    "production": {
-      "channel": "production"
-    },
-    "preview": {
-      "channel": "preview"
-    }
-  },
   "submit": {
     "production": {}
   }

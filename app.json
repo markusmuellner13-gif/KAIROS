@@ -13,7 +13,7 @@
       "backgroundColor": "#0A0E1A"
     },
     "updates": {
-      "url": "https://u.expo.dev/kairos-assistant",
+      "url": "https://u.expo.dev/313ee921-41c4-44c0-a458-46fdb70fcd1e",
       "enabled": true,
       "fallbackToCacheTimeout": 0,
       "checkAutomatically": "ON_LOAD"
@@ -46,7 +46,9 @@
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
+        "USE_FINGERPRINT",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -78,10 +80,18 @@
         {
           "locationAlwaysAndWhenInUsePermission": "KAIROS nutzt deinen Standort für Ladenöffnungszeiten."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "313ee921-41c4-44c0-a458-46fdb70fcd1e"
+      }
+    },
+    "owner": "kuskus279"
   }
 }
