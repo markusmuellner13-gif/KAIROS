@@ -167,7 +167,7 @@ export default function AssistantScreen() {
           {isProcessing && (
             <View style={styles.typingRow}>
               <View style={styles.typingBubble}>
-                <Text style={styles.typingText}>ARIA is thinking</Text>
+                <Text style={styles.typingText}>KAIROS is thinking</Text>
                 <Text style={styles.typingDots}>...</Text>
               </View>
             </View>
@@ -211,7 +211,7 @@ export default function AssistantScreen() {
         </View>
 
         {/* Wake word hint */}
-        <Text style={styles.hint}>Say "Hey ARIA" to activate voice commands</Text>
+        <Text style={styles.hint}>Say "Hey KAIROS" to activate voice commands</Text>
       </KeyboardAvoidingView>
     </LinearGradient>
   );

@@ -37,7 +37,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="assistant"
         options={{
-          title: 'ARIA',
+          title: 'KAIROS',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="mic-outline" size={size} color={color} />
           ),

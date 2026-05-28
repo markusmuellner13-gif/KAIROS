@@ -186,7 +186,7 @@ export default function DashboardScreen() {
         <View style={styles.actionsRow}>
           <QuickAction
             icon="mic-outline"
-            label="Talk to ARIA"
+            label="Talk to KAIROS"
             onPress={() => router.push('/(tabs)/assistant')}
             color={Colors.primary}
           />
