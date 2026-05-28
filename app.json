@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "ARIA",
+    "slug": "aria-assistant",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "aria",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aria.assistant",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "ARIA needs microphone access for voice commands.",
+        "NSSpeechRecognitionUsageDescription": "ARIA uses speech recognition to understand your voice commands.",
+        "NSLocationWhenInUseUsageDescription": "ARIA uses your location to find nearby stores and their opening hours.",
+        "NSUserNotificationUsageDescription": "ARIA sends you smart reminders and alerts."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0E1A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.aria.assistant",
+      "permissions": [
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#00D4FF",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "ARIA uses location to find nearby stores and services."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
