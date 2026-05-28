@@ -2,19 +2,24 @@
   "expo": {
     "name": "KAIROS",
     "slug": "kairos-assistant",
-    "version": "1.0.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "scheme": "kairos",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0E1A"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kairos.assistant",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "KAIROS needs microphone access for voice commands.",
-        "NSSpeechRecognitionUsageDescription": "KAIROS uses speech recognition to understand your voice commands.",
-        "NSLocationWhenInUseUsageDescription": "KAIROS uses your location to find nearby stores and their opening hours.",
-        "NSUserNotificationUsageDescription": "KAIROS sends you smart reminders and alerts."
+        "NSMicrophoneUsageDescription": "KAIROS benötigt Mikrofonzugriff für Sprachbefehle.",
+        "NSSpeechRecognitionUsageDescription": "KAIROS nutzt Spracherkennung für deine Sprachbefehle.",
+        "NSLocationWhenInUseUsageDescription": "KAIROS nutzt deinen Standort für Ladenöffnungszeiten in deiner Nähe.",
+        "NSUserNotificationUsageDescription": "KAIROS sendet dir intelligente Erinnerungen und Tagesbriefe."
       }
     },
     "android": {
@@ -43,6 +48,14 @@
       "expo-router",
       "expo-secure-store",
       [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0A0E1A",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 300
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
@@ -53,7 +66,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "KAIROS uses location to find nearby stores and services."
+          "locationAlwaysAndWhenInUsePermission": "KAIROS nutzt deinen Standort für Ladenöffnungszeiten."
         }
       ]
     ],
