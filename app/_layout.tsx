@@ -31,6 +31,10 @@ export default function RootLayout() {
         sleepReminderTime: activeSettings.sleepReminderTime,
         sportDays: activeSettings.sportDays,
         sportTime: activeSettings.sportTime,
+        bibleNotificationsEnabled: activeSettings.bibleNotificationsEnabled ?? true,
+        bibleMorningTime: activeSettings.bibleMorningTime ?? '07:00',
+        bibleNoonTime: activeSettings.bibleNoonTime ?? '12:00',
+        bibleEveningTime: activeSettings.bibleEveningTime ?? '18:00',
       });
     }
   }

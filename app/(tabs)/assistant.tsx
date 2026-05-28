@@ -14,7 +14,7 @@ import {
 } from '../../services/assistant';
 import { speak, stopSpeaking } from '../../services/voice';
 import MessageBubble from '../../components/MessageBubble';
-import ARIAAvatar from '../../components/ARIAAvatar';
+import KAIROSAvatar from '../../components/KAIROSAvatar';
 
 export default function AssistantScreen() {
   const scrollRef = useRef<ScrollView>(null);
@@ -130,7 +130,7 @@ export default function AssistantScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <ARIAAvatar isActive={isProcessing || isListening} isSpeaking={isSpeaking} size={40} />
+            <KAIROSAvatar isActive={isProcessing || isListening} isSpeaking={isSpeaking} size={40} />
             <View>
               <Text style={styles.headerTitle}>{ASSISTANT_NAME}</Text>
               <Text style={styles.headerStatus}>

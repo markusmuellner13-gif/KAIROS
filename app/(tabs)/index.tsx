@@ -12,7 +12,7 @@ import { Storage, Appointment, UserProfile } from '../../services/storage';
 import { getGreeting, getDailyBrief } from '../../services/assistant';
 import { speak } from '../../services/voice';
 import GlassCard from '../../components/GlassCard';
-import ARIAAvatar from '../../components/ARIAAvatar';
+import KAIROSAvatar from '../../components/KAIROSAvatar';
 import QuickAction from '../../components/QuickAction';
 
 const { width } = Dimensions.get('window');
@@ -101,7 +101,7 @@ export default function DashboardScreen() {
 
         {/* Clock + Avatar */}
         <View style={styles.clockSection}>
-          <ARIAAvatar isActive={avatarActive} isSpeaking={isSpeaking} size={88} />
+          <KAIROSAvatar isActive={avatarActive} isSpeaking={isSpeaking} size={88} />
           <View style={styles.clockInfo}>
             <Text style={styles.clockTime}>{timeStr}</Text>
             <Text style={styles.clockDate}>{dateStr}</Text>

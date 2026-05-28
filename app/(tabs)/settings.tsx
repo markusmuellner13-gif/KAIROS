@@ -10,7 +10,14 @@ import {
   ASSISTANT_NAME, ASSISTANT_FULL_NAME, STORAGE_KEYS, DEFAULT_SETTINGS,
 } from '../../constants/config';
 import { Storage, UserProfile, AppSettings } from '../../services/storage';
-import { scheduleSmartReminders, cancelAllNotifications } from '../../services/notifications';
+import {
+  scheduleSmartReminders, cancelAllNotifications,
+  scheduleBibleVerseNotifications, cancelBibleVerseNotifications,
+} from '../../services/notifications';
+import {
+  getLiturgicalSeason, getLiturgicalSeasonLabel, checkFeastDay,
+  getRandomVerseForToday,
+} from '../../services/bible';
 import GlassCard from '../../components/GlassCard';
 
 const SPORT_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -25,6 +32,12 @@ export default function SettingsScreen() {
   const [sportTime, setSportTime] = useState('18:00');
   const [morningBrief, setMorningBrief] = useState('07:30');
   const [sleepReminder, setSleepReminder] = useState('22:30');
+
+  // Bible verse of the day preview
+  const [biblePreview, setBiblePreview] = useState('');
+  const [biblePreviewRef, setBiblePreviewRef] = useState('');
+  const [seasonLabel, setSeasonLabel] = useState('');
+  const [feastDay, setFeastDay] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const [prof, sett] = await Promise.all([
@@ -43,6 +56,13 @@ export default function SettingsScreen() {
       setMorningBrief(sett.morningBriefTime);
       setSleepReminder(sett.sleepReminderTime);
     }
+
+    // Load Bible preview
+    const verse = getRandomVerseForToday();
+    setBiblePreview(verse.text);
+    setBiblePreviewRef(verse.reference);
+    setSeasonLabel(getLiturgicalSeasonLabel(getLiturgicalSeason()));
+    setFeastDay(checkFeastDay());
   }, []);
 
   useEffect(() => { load(); }, []);
@@ -74,6 +94,10 @@ export default function SettingsScreen() {
         sleepReminderTime: updated.sleepReminderTime,
         sportDays: updated.sportDays,
         sportTime: updated.sportTime,
+        bibleNotificationsEnabled: updated.bibleNotificationsEnabled,
+        bibleMorningTime: updated.bibleMorningTime,
+        bibleNoonTime: updated.bibleNoonTime,
+        bibleEveningTime: updated.bibleEveningTime,
       });
     } else {
       await cancelAllNotifications();
@@ -146,7 +170,7 @@ export default function SettingsScreen() {
             <Text style={styles.profileName}>{profile?.name || 'Commander'}</Text>
             <Text style={styles.profileSub}>{ASSISTANT_FULL_NAME}</Text>
             <Text style={styles.profileSub2}>
-              Timezone: {profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone}
+              {Intl.DateTimeFormat().resolvedOptions().timeZone}
             </Text>
           </View>
           <TouchableOpacity style={styles.editBtn} onPress={() => setShowProfileModal(true)}>
@@ -157,27 +181,18 @@ export default function SettingsScreen() {
         {/* Notifications */}
         <Text style={styles.sectionTitle}>Notifications</Text>
         <GlassCard>
-          {settingRow(
-            'Enable Notifications',
-            settings.notificationsEnabled,
+          {settingRow('Enable Notifications', settings.notificationsEnabled,
             v => updateSettings({ notificationsEnabled: v }),
-            'Smart reminders, alerts, and daily briefs',
-          )}
-          {settingRow(
-            'Voice Responses',
-            settings.voiceEnabled,
+            'Smart reminders, alerts, and daily briefs')}
+          {settingRow('Voice Responses', settings.voiceEnabled,
             v => updateSettings({ voiceEnabled: v }),
-            'ARIA speaks responses aloud',
-          )}
-          {settingRow(
-            'Wake Word Detection',
-            settings.wakeWordEnabled,
+            'KAIROS speaks responses aloud')}
+          {settingRow('Wake Word Detection', settings.wakeWordEnabled,
             v => updateSettings({ wakeWordEnabled: v }),
-            'Say "Hey ARIA" to activate',
-          )}
+            'Say "Hey KAIROS" to activate')}
         </GlassCard>
 
-        {/* Schedule Times */}
+        {/* Daily Schedule */}
         <Text style={styles.sectionTitle}>Daily Schedule</Text>
         <GlassCard style={styles.timeCard}>
           {[
@@ -200,23 +215,17 @@ export default function SettingsScreen() {
           ))}
         </GlassCard>
 
-        {/* Sport Days */}
+        {/* Workout Days */}
         <Text style={styles.sectionTitle}>Workout Days</Text>
         <GlassCard>
           <View style={styles.daysGrid}>
             {SPORT_DAYS.map(day => (
               <TouchableOpacity
                 key={day}
-                style={[
-                  styles.dayChip,
-                  settings.sportDays.includes(day) && styles.dayChipActive,
-                ]}
+                style={[styles.dayChip, settings.sportDays.includes(day) && styles.dayChipActive]}
                 onPress={() => toggleSportDay(day)}
               >
-                <Text style={[
-                  styles.dayText,
-                  settings.sportDays.includes(day) && styles.dayTextActive,
-                ]}>
+                <Text style={[styles.dayText, settings.sportDays.includes(day) && styles.dayTextActive]}>
                   {day.slice(0, 3)}
                 </Text>
               </TouchableOpacity>
@@ -235,7 +244,67 @@ export default function SettingsScreen() {
           </View>
         </GlassCard>
 
-        {/* Security & Data */}
+        {/* ─── Catholic Bible ─────────────────────────────────────── */}
+        <Text style={styles.sectionTitle}>Catholic Bible</Text>
+
+        {/* Liturgical season + today's verse preview */}
+        <GlassCard style={styles.biblePreviewCard} glowing>
+          <View style={styles.bibleHeader}>
+            <Ionicons name="book-outline" size={18} color={Colors.accent} />
+            <View style={styles.bibleHeaderText}>
+              <Text style={styles.bibleSeasonLabel}>{seasonLabel}</Text>
+              {feastDay && (
+                <Text style={styles.bibleFeастLabel}>{feastDay}</Text>
+              )}
+            </View>
+          </View>
+          <Text style={styles.bibleVerseText}>"{biblePreview}"</Text>
+          <Text style={styles.bibleRef}>— {biblePreviewRef}</Text>
+          <Text style={styles.bibleTrans}>Douay-Rheims Bible (Catholic Edition)</Text>
+        </GlassCard>
+
+        {/* Bible notification toggle */}
+        <GlassCard>
+          {settingRow(
+            'Daily Scripture Notifications',
+            settings.bibleNotificationsEnabled ?? true,
+            v => updateSettings({ bibleNotificationsEnabled: v }),
+            '3 Bible verses per day — morning, noon & evening',
+          )}
+        </GlassCard>
+
+        {/* Bible notification times */}
+        {(settings.bibleNotificationsEnabled ?? true) && (
+          <GlassCard style={styles.timeCard}>
+            <View style={styles.bibleTimesHeader}>
+              <Ionicons name="notifications-outline" size={14} color={Colors.textMuted} />
+              <Text style={styles.bibleTimesTitle}>Scripture Notification Times</Text>
+            </View>
+            {[
+              { label: 'Morning (Lauds)', value: settings.bibleMorningTime ?? '07:00', key: 'bibleMorningTime' },
+              { label: 'Noon (Angelus)', value: settings.bibleNoonTime ?? '12:00', key: 'bibleNoonTime' },
+              { label: 'Evening (Vespers)', value: settings.bibleEveningTime ?? '18:00', key: 'bibleEveningTime' },
+            ].map(({ label, value, key }) => (
+              <View key={label} style={styles.timeRow}>
+                <Text style={styles.timeLabel}>{label}</Text>
+                <TextInput
+                  style={styles.timeInput}
+                  value={value}
+                  onChangeText={v => updateSettings({ [key]: v } as Partial<AppSettings>)}
+                  placeholder="HH:MM"
+                  placeholderTextColor={Colors.textMuted}
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={5}
+                />
+              </View>
+            ))}
+            <Text style={styles.bibleTimesNote}>
+              Times are modelled on the Liturgy of the Hours: Lauds (morning prayer), Angelus (noon), and Vespers (evening prayer).
+            </Text>
+          </GlassCard>
+        )}
+
+        {/* Security & Privacy */}
         <Text style={styles.sectionTitle}>Security & Privacy</Text>
         <GlassCard>
           <View style={styles.securityItem}>
@@ -263,9 +332,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </GlassCard>
 
-        {/* Version */}
-        <Text style={styles.version}>ARIA v1.0.0 — {ASSISTANT_FULL_NAME}</Text>
-
+        <Text style={styles.version}>KAIROS v1.1.0 — {ASSISTANT_FULL_NAME}</Text>
         <View style={{ height: Spacing.xxl }} />
       </ScrollView>
 
@@ -274,7 +341,7 @@ export default function SettingsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Your Profile</Text>
-            <Text style={styles.modalNote}>ARIA uses this to personalise your experience. Stored securely on-device only.</Text>
+            <Text style={styles.modalNote}>KAIROS uses this to personalise your experience. Stored securely on-device only.</Text>
             {[
               { label: 'Your Name', value: name, set: setName, placeholder: 'e.g. Markus' },
               { label: 'Wake Up Time (HH:MM)', value: wakeUpTime, set: setWakeUpTime, placeholder: '07:00' },
@@ -309,9 +376,7 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  header: {
-    paddingHorizontal: Spacing.md, paddingTop: 56, paddingBottom: Spacing.md,
-  },
+  header: { paddingHorizontal: Spacing.md, paddingTop: 56, paddingBottom: Spacing.md },
   headerTitle: { color: Colors.text, fontSize: FontSize.xxl, fontWeight: FontWeight.bold },
   scroll: { flex: 1 },
   content: { paddingHorizontal: Spacing.md },
@@ -359,6 +424,29 @@ const styles = StyleSheet.create({
   dayChipActive: { backgroundColor: Colors.primaryGlow, borderColor: Colors.primary },
   dayText: { color: Colors.textMuted, fontSize: FontSize.xs, fontWeight: FontWeight.medium },
   dayTextActive: { color: Colors.primary },
+
+  // Bible styles
+  biblePreviewCard: { marginBottom: Spacing.sm, gap: Spacing.sm },
+  bibleHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
+  bibleHeaderText: { flex: 1 },
+  bibleSeasonLabel: { color: Colors.accent, fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
+  bibleFeастLabel: { color: Colors.warning, fontSize: FontSize.xs, marginTop: 2 },
+  bibleVerseText: {
+    color: Colors.text, fontSize: FontSize.sm, lineHeight: 20,
+    fontStyle: 'italic',
+  },
+  bibleRef: { color: Colors.primary, fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
+  bibleTrans: { color: Colors.textDim, fontSize: FontSize.xs },
+  bibleTimesHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  bibleTimesTitle: { color: Colors.textMuted, fontSize: FontSize.sm, fontWeight: FontWeight.medium },
+  bibleTimesNote: {
+    color: Colors.textDim, fontSize: FontSize.xs, lineHeight: 16,
+    marginTop: Spacing.sm, fontStyle: 'italic',
+  },
+
   securityItem: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
   securityInfo: { flex: 1 },
   securityTitle: { color: Colors.text, fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
@@ -373,8 +461,7 @@ const styles = StyleSheet.create({
   modal: {
     backgroundColor: Colors.surface, borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl, padding: Spacing.xl,
-    borderTopWidth: 1, borderColor: Colors.border,
-    maxHeight: '90%',
+    borderTopWidth: 1, borderColor: Colors.border, maxHeight: '90%',
   },
   modalTitle: { color: Colors.primary, fontSize: FontSize.xl, fontWeight: FontWeight.bold, marginBottom: Spacing.xs },
   modalNote: { color: Colors.textMuted, fontSize: FontSize.sm, marginBottom: Spacing.md },

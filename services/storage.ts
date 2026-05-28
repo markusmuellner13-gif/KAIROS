@@ -117,4 +117,8 @@ export interface AppSettings {
   sportTime: string;
   currency: string;
   language: string;
+  bibleNotificationsEnabled: boolean;
+  bibleMorningTime: string;
+  bibleNoonTime: string;
+  bibleEveningTime: string;
 }

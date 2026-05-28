@@ -124,6 +124,16 @@ export async function processUserInput(input: string): Promise<string> {
     return `Your workout schedule: ${days} at ${time}. Consistency is key to peak physical performance.`;
   }
 
+  // Bible / scripture queries
+  if (lower.includes('bible') || lower.includes('verse') || lower.includes('scripture') || lower.includes('gospel') || lower.includes('holy') || lower.includes('pray') || lower.includes('catholic')) {
+    const { getLiturgicalSeason, getLiturgicalSeasonLabel, checkFeastDay, getRandomVerseForToday } = await import('./bible');
+    const verse = getRandomVerseForToday();
+    const season = getLiturgicalSeason();
+    const feast = checkFeastDay();
+    const feastNote = feast ? ` Today is ${feast}.` : '';
+    return `${getLiturgicalSeasonLabel(season)}.${feastNote}\n\n"${verse.text}"\n— ${verse.reference}`;
+  }
+
   // Stock queries
   if (lower.includes('stock') || lower.includes('market') || lower.includes('trade') || lower.includes('invest')) {
     return "I can analyse your watchlist stocks and show market trends in the Stocks tab. Note: I can't automatically trade on TradeRepublic as they don't offer a public trading API, but I provide smart buy/sell analysis signals.";

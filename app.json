@@ -1,20 +1,20 @@
 {
   "expo": {
-    "name": "ARIA",
-    "slug": "aria-assistant",
+    "name": "KAIROS",
+    "slug": "kairos-assistant",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "scheme": "aria",
+    "scheme": "kairos",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.aria.assistant",
+      "bundleIdentifier": "com.kairos.assistant",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "ARIA needs microphone access for voice commands.",
-        "NSSpeechRecognitionUsageDescription": "ARIA uses speech recognition to understand your voice commands.",
-        "NSLocationWhenInUseUsageDescription": "ARIA uses your location to find nearby stores and their opening hours.",
-        "NSUserNotificationUsageDescription": "ARIA sends you smart reminders and alerts."
+        "NSMicrophoneUsageDescription": "KAIROS needs microphone access for voice commands.",
+        "NSSpeechRecognitionUsageDescription": "KAIROS uses speech recognition to understand your voice commands.",
+        "NSLocationWhenInUseUsageDescription": "KAIROS uses your location to find nearby stores and their opening hours.",
+        "NSUserNotificationUsageDescription": "KAIROS sends you smart reminders and alerts."
       }
     },
     "android": {
@@ -24,7 +24,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.aria.assistant",
+      "package": "com.kairos.assistant",
       "permissions": [
         "RECORD_AUDIO",
         "ACCESS_FINE_LOCATION",
@@ -53,7 +53,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "ARIA uses location to find nearby stores and services."
+          "locationAlwaysAndWhenInUsePermission": "KAIROS uses location to find nearby stores and services."
         }
       ]
     ],

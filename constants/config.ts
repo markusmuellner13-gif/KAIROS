@@ -1,17 +1,17 @@
-export const ASSISTANT_NAME = 'ARIA';
-export const ASSISTANT_FULL_NAME = 'Artificial Reasoning Intelligence Assistant';
-export const WAKE_WORDS = ['hey aria', 'aria', 'hey a.r.i.a.'];
+export const ASSISTANT_NAME = 'KAIROS';
+export const ASSISTANT_FULL_NAME = 'Knowledge And Intelligence Reasoning Operating System';
+export const WAKE_WORDS = ['hey kairos', 'kairos', 'hey k.a.i.r.o.s.'];
 
 export const STORAGE_KEYS = {
-  USER_PROFILE: 'aria_user_profile',
-  APPOINTMENTS: 'aria_appointments',
-  REMINDERS: 'aria_reminders',
-  STOCK_WATCHLIST: 'aria_stock_watchlist',
-  STOCK_PORTFOLIO: 'aria_stock_portfolio',
-  CHAT_HISTORY: 'aria_chat_history',
-  SETTINGS: 'aria_settings',
-  ROUTINE: 'aria_routine',
-  STORE_FAVORITES: 'aria_store_favorites',
+  USER_PROFILE: 'kairos_user_profile',
+  APPOINTMENTS: 'kairos_appointments',
+  REMINDERS: 'kairos_reminders',
+  STOCK_WATCHLIST: 'kairos_stock_watchlist',
+  STOCK_PORTFOLIO: 'kairos_stock_portfolio',
+  CHAT_HISTORY: 'kairos_chat_history',
+  SETTINGS: 'kairos_settings',
+  ROUTINE: 'kairos_routine',
+  STORE_FAVORITES: 'kairos_store_favorites',
 };
 
 export const NOTIFICATION_IDS = {
@@ -20,6 +20,9 @@ export const NOTIFICATION_IDS = {
   SPORT_REMINDER: 'sport_reminder',
   SLEEP_REMINDER: 'sleep_reminder',
   STOCK_ALERT: 'stock_alert',
+  BIBLE_MORNING: 'bible_morning',
+  BIBLE_NOON: 'bible_noon',
+  BIBLE_EVENING: 'bible_evening',
 };
 
 export const ALPHA_VANTAGE_BASE = 'https://www.alphavantage.co/query';
@@ -36,6 +39,10 @@ export const DEFAULT_SETTINGS = {
   currency: 'EUR',
   language: 'en',
   theme: 'dark',
+  bibleNotificationsEnabled: true,
+  bibleMorningTime: '07:00',
+  bibleNoonTime: '12:00',
+  bibleEveningTime: '18:00',
 };
 
 export const GREETINGS = {
