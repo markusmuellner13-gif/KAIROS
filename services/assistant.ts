@@ -127,11 +127,15 @@ export async function processUserInput(input: string): Promise<string> {
   // Bible / scripture queries
   if (lower.includes('bible') || lower.includes('verse') || lower.includes('scripture') || lower.includes('gospel') || lower.includes('holy') || lower.includes('pray') || lower.includes('catholic')) {
     const { getLiturgicalSeason, getLiturgicalSeasonLabel, checkFeastDay, getRandomVerseForToday } = await import('./bible');
-    const verse = getRandomVerseForToday();
+    const sett = await Storage.load<{ bibleLanguage?: 'en' | 'de' }>(STORAGE_KEYS.SETTINGS);
+    const lang = sett?.bibleLanguage ?? 'en';
+    const verse = getRandomVerseForToday(lang);
     const season = getLiturgicalSeason();
     const feast = checkFeastDay();
-    const feastNote = feast ? ` Today is ${feast}.` : '';
-    return `${getLiturgicalSeasonLabel(season)}.${feastNote}\n\n"${verse.text}"\n— ${verse.reference}`;
+    const feastNote = feast ? ` ${lang === 'de' ? 'Heute ist' : 'Today is'} ${feast}.` : '';
+    const quote = lang === 'de' ? '„' : '"';
+    const quoteClose = lang === 'de' ? '"' : '"';
+    return `${getLiturgicalSeasonLabel(season, lang)}.${feastNote}\n\n${quote}${verse.text}${quoteClose}\n— ${verse.reference}`;
   }
 
   // Stock queries

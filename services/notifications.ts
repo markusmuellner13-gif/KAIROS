@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Appointment, Reminder } from './storage';
 import { NOTIFICATION_IDS } from '../constants/config';
-import { getVerseForTime, formatVerseNotification, checkFeastDay } from './bible';
+import { getVerseForTime, formatVerseNotification, checkFeastDay, BibleLanguage } from './bible';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -140,6 +140,7 @@ export async function scheduleBibleVerseNotifications(
   noonMinute: number,
   eveningHour: number,
   eveningMinute: number,
+  lang: BibleLanguage = 'en',
 ): Promise<void> {
   const permitted = await requestNotificationPermissions();
   if (!permitted) return;
@@ -156,8 +157,8 @@ export async function scheduleBibleVerseNotifications(
   ];
 
   for (const slot of slots) {
-    const verse = getVerseForTime(slot.time);
-    const { title, body } = formatVerseNotification(verse, slot.time);
+    const verse = getVerseForTime(slot.time, lang);
+    const { title, body } = formatVerseNotification(verse, slot.time, lang);
 
     await Notifications.scheduleNotificationAsync({
       identifier: slot.id,
@@ -216,6 +217,7 @@ export async function scheduleSmartReminders(settings: {
   bibleMorningTime?: string;
   bibleNoonTime?: string;
   bibleEveningTime?: string;
+  bibleLanguage?: BibleLanguage;
 }): Promise<void> {
   const dayMap: Record<string, number> = {
     Sunday: 1, Monday: 2, Tuesday: 3, Wednesday: 4,
@@ -237,7 +239,7 @@ export async function scheduleSmartReminders(settings: {
     const [bmH, bmM] = (settings.bibleMorningTime ?? '07:00').split(':').map(Number);
     const [bnH, bnM] = (settings.bibleNoonTime ?? '12:00').split(':').map(Number);
     const [beH, beM] = (settings.bibleEveningTime ?? '18:00').split(':').map(Number);
-    await scheduleBibleVerseNotifications(bmH, bmM, bnH, bnM, beH, beM);
+    await scheduleBibleVerseNotifications(bmH, bmM, bnH, bnM, beH, beM, settings.bibleLanguage ?? 'en');
   } else {
     await cancelBibleVerseNotifications();
   }

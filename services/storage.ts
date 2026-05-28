@@ -121,4 +121,5 @@ export interface AppSettings {
   bibleMorningTime: string;
   bibleNoonTime: string;
   bibleEveningTime: string;
+  bibleLanguage: 'en' | 'de';
 }

@@ -42,6 +42,7 @@ export default function RootLayout() {
           bibleMorningTime: activeSettings.bibleMorningTime ?? '07:00',
           bibleNoonTime: activeSettings.bibleNoonTime ?? '12:00',
           bibleEveningTime: activeSettings.bibleEveningTime ?? '18:00',
+          bibleLanguage: activeSettings.bibleLanguage ?? 'en',
         });
       }
     } catch (e) {

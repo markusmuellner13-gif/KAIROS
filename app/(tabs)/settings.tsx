@@ -16,7 +16,7 @@ import {
 } from '../../services/notifications';
 import {
   getLiturgicalSeason, getLiturgicalSeasonLabel, checkFeastDay,
-  getRandomVerseForToday,
+  getRandomVerseForToday, BibleLanguage,
 } from '../../services/bible';
 import GlassCard from '../../components/GlassCard';
 
@@ -57,15 +57,25 @@ export default function SettingsScreen() {
       setSleepReminder(sett.sleepReminderTime);
     }
 
-    // Load Bible preview
-    const verse = getRandomVerseForToday();
+    // Load Bible preview in selected language
+    const currentLang: BibleLanguage = (sett?.bibleLanguage as BibleLanguage) ?? 'en';
+    const verse = getRandomVerseForToday(currentLang);
     setBiblePreview(verse.text);
     setBiblePreviewRef(verse.reference);
-    setSeasonLabel(getLiturgicalSeasonLabel(getLiturgicalSeason()));
+    setSeasonLabel(getLiturgicalSeasonLabel(getLiturgicalSeason(), currentLang));
     setFeastDay(checkFeastDay());
   }, []);
 
   useEffect(() => { load(); }, []);
+
+  // Refresh verse preview when language changes
+  useEffect(() => {
+    const lang: BibleLanguage = settings.bibleLanguage ?? 'en';
+    const verse = getRandomVerseForToday(lang);
+    setBiblePreview(verse.text);
+    setBiblePreviewRef(verse.reference);
+    setSeasonLabel(getLiturgicalSeasonLabel(getLiturgicalSeason(), lang));
+  }, [settings.bibleLanguage]);
 
   const saveProfile = useCallback(async () => {
     const prof: UserProfile = {
@@ -98,6 +108,7 @@ export default function SettingsScreen() {
         bibleMorningTime: updated.bibleMorningTime,
         bibleNoonTime: updated.bibleNoonTime,
         bibleEveningTime: updated.bibleEveningTime,
+        bibleLanguage: updated.bibleLanguage ?? 'en',
       });
     } else {
       await cancelAllNotifications();
@@ -261,6 +272,34 @@ export default function SettingsScreen() {
           <Text style={styles.bibleVerseText}>"{biblePreview}"</Text>
           <Text style={styles.bibleRef}>— {biblePreviewRef}</Text>
           <Text style={styles.bibleTrans}>Douay-Rheims Bible (Catholic Edition)</Text>
+        </GlassCard>
+
+        {/* Bible language selector */}
+        <GlassCard style={styles.langCard}>
+          <Text style={styles.langLabel}>Bible Language</Text>
+          <Text style={styles.langDesc}>
+            English: Douay-Rheims (1899, public domain){'\n'}
+            Deutsch: Eigene Übersetzung nach dem Urtext
+          </Text>
+          <View style={styles.langToggle}>
+            {(['en', 'de'] as const).map(lang => (
+              <TouchableOpacity
+                key={lang}
+                style={[
+                  styles.langBtn,
+                  (settings.bibleLanguage ?? 'en') === lang && styles.langBtnActive,
+                ]}
+                onPress={() => updateSettings({ bibleLanguage: lang })}
+              >
+                <Text style={[
+                  styles.langBtnText,
+                  (settings.bibleLanguage ?? 'en') === lang && styles.langBtnTextActive,
+                ]}>
+                  {lang === 'en' ? '🇬🇧  English' : '🇩🇪  Deutsch'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </GlassCard>
 
         {/* Bible notification toggle */}
@@ -442,6 +481,18 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   bibleTimesTitle: { color: Colors.textMuted, fontSize: FontSize.sm, fontWeight: FontWeight.medium },
+  langCard: { gap: Spacing.sm, marginBottom: Spacing.sm },
+  langLabel: { color: Colors.text, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  langDesc: { color: Colors.textMuted, fontSize: FontSize.xs, lineHeight: 17 },
+  langToggle: { flexDirection: 'row', gap: Spacing.sm },
+  langBtn: {
+    flex: 1, paddingVertical: Spacing.sm, borderRadius: BorderRadius.md,
+    borderWidth: 1.5, borderColor: Colors.border,
+    alignItems: 'center', backgroundColor: Colors.surfaceElevated,
+  },
+  langBtnActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryGlow },
+  langBtnText: { color: Colors.textMuted, fontSize: FontSize.sm, fontWeight: FontWeight.medium },
+  langBtnTextActive: { color: Colors.primary, fontWeight: FontWeight.bold },
   bibleTimesNote: {
     color: Colors.textDim, fontSize: FontSize.xs, lineHeight: 16,
     marginTop: Spacing.sm, fontStyle: 'italic',

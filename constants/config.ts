@@ -43,6 +43,7 @@ export const DEFAULT_SETTINGS = {
   bibleMorningTime: '07:00',
   bibleNoonTime: '12:00',
   bibleEveningTime: '18:00',
+  bibleLanguage: 'en' as const,
 };
 
 export const GREETINGS = {
