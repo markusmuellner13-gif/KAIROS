@@ -12,6 +12,15 @@
       "resizeMode": "contain",
       "backgroundColor": "#0A0E1A"
     },
+    "updates": {
+      "url": "https://u.expo.dev/kairos-assistant",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kairos.assistant",
@@ -47,6 +56,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "expo-updates",
       [
         "expo-splash-screen",
         {
