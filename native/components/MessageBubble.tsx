@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, BorderRadius, Spacing, FontSize, FontWeight } from '../constants/theme';
 import { ChatMessage } from '../services/storage';
 
@@ -24,6 +25,12 @@ export default function MessageBubble({ message }: Props) {
         <Text style={[styles.text, isUser ? styles.userText : styles.assistantText]}>
           {message.content}
         </Text>
+        {message.action && (
+          <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(message.action!.href)}>
+            <Ionicons name={message.action.type === 'call' ? 'call-outline' : 'logo-whatsapp'} size={14} color={Colors.background} />
+            <Text style={styles.actionText}>{message.action.label}</Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.time}>{time}</Text>
       </View>
     </View>
@@ -90,5 +97,21 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: 4,
     alignSelf: 'flex-end',
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.sm,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: Spacing.xs,
+    alignSelf: 'flex-start',
+  },
+  actionText: {
+    color: Colors.background,
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
   },
 });

@@ -77,8 +77,9 @@ export default function AssistantScreen() {
       const ariaMsg: ChatMessage = {
         id: generateId(),
         role: 'assistant',
-        content: response,
+        content: response.text,
         timestamp: new Date().toISOString(),
+        action: response.action,
       };
 
       setMessages(prev => [...prev, ariaMsg]);
@@ -87,7 +88,7 @@ export default function AssistantScreen() {
 
       if (voiceEnabled) {
         setIsSpeaking(true);
-        speak(response, () => setIsSpeaking(false));
+        speak(response.text, () => setIsSpeaking(false));
       }
 
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
@@ -210,8 +211,8 @@ export default function AssistantScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Wake word hint */}
-        <Text style={styles.hint}>Say "Hey KAIROS" to activate voice commands</Text>
+        {/* Mic hint — tap-to-talk only; there's no passive background wake-word listener */}
+        <Text style={styles.hint}>Tap the mic to talk to KAIROS</Text>
       </KeyboardAvoidingView>
     </HUDBackground>
   );

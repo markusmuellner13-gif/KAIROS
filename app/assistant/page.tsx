@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Send, Mic, Volume2, VolumeX, Trash2, StopCircle } from 'lucide-react';
+import { Send, Mic, Volume2, VolumeX, Trash2, StopCircle, Repeat, PhoneCall, MessageCircle } from 'lucide-react';
 import HUDShell from '../../components/HUDShell';
 import HUDAvatar from '../../components/HUDAvatar';
 import { Colors } from '../../lib/theme';
@@ -9,6 +9,8 @@ import { ASSISTANT_NAME } from '../../lib/config';
 import { ChatMessage } from '../../lib/storage';
 import { processUserInput, saveChatMessage, getChatHistory, clearChatHistory, generateId } from '../../lib/assistant';
 import { speak, stopSpeaking, listenOnce } from '../../lib/voice';
+
+const STOP_PHRASES = /^(stop|goodbye|bye kairos|turn off|that's all|thanks kairos|thank you kairos)\b/i;
 
 export default function AssistantPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -18,7 +20,10 @@ export default function AssistantPage() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [conversationMode, setConversationMode] = useState(false);
   const stopListenRef = useRef<(() => void) | null>(null);
+  const conversationModeRef = useRef(false);
+  const sendMessageRef = useRef<(text: string) => void>(() => {});
 
   useEffect(() => {
     const hist = getChatHistory();
@@ -26,7 +31,7 @@ export default function AssistantPage() {
       setMessages([{
         id: generateId(),
         role: 'assistant',
-        content: `Systems online. I'm ${ASSISTANT_NAME} — I have access to your schedule, inbox, and markets, and I'm ready to assist. Ask me for your daily brief, to check your emails or texts, set a reminder, review your portfolio, or ask for a word of Scripture.`,
+        content: `Systems online. I'm ${ASSISTANT_NAME} — I have access to your schedule, inbox, and markets, and I'm ready to assist. Ask me for your daily brief, to check your emails or texts, set a reminder, review your portfolio, call or WhatsApp a saved contact, or ask for a word of Scripture.`,
         timestamp: new Date().toISOString(),
       }]);
     } else {
@@ -38,8 +43,38 @@ export default function AssistantPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, isProcessing]);
 
+  const startListening = useCallback(() => {
+    setIsListening(true);
+    const stop = listenOnce(
+      (text) => {
+        setIsListening(false);
+        sendMessageRef.current(text);
+      },
+      () => {
+        setIsListening(false);
+        if (conversationModeRef.current) setConversationMode(false);
+      },
+    );
+    stopListenRef.current = stop;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const sendMessage = useCallback((text: string) => {
     if (!text.trim()) return;
+
+    if (conversationModeRef.current && STOP_PHRASES.test(text.trim())) {
+      conversationModeRef.current = false;
+      setConversationMode(false);
+      const reply: ChatMessage = {
+        id: generateId(), role: 'assistant', content: 'Conversation mode off. Tap the mic whenever you need me.',
+        timestamp: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, reply]);
+      saveChatMessage(reply);
+      if (voiceEnabled) speak(reply.content);
+      return;
+    }
+
     const userMsg: ChatMessage = { id: generateId(), role: 'user', content: text.trim(), timestamp: new Date().toISOString() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
@@ -48,16 +83,27 @@ export default function AssistantPage() {
 
     setTimeout(() => {
       const response = processUserInput(text);
-      const reply: ChatMessage = { id: generateId(), role: 'assistant', content: response, timestamp: new Date().toISOString() };
+      const reply: ChatMessage = {
+        id: generateId(), role: 'assistant', content: response.text, timestamp: new Date().toISOString(),
+        action: response.action,
+      };
       setMessages(prev => [...prev, reply]);
       setIsProcessing(false);
       saveChatMessage(reply);
       if (voiceEnabled) {
         setIsSpeaking(true);
-        speak(response, () => setIsSpeaking(false));
+        speak(response.text, () => {
+          setIsSpeaking(false);
+          if (conversationModeRef.current) startListening();
+        });
+      } else if (conversationModeRef.current) {
+        startListening();
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, 350);
-  }, [voiceEnabled]);
+  }, [voiceEnabled, startListening]);
+
+  sendMessageRef.current = sendMessage;
 
   const toggleMic = useCallback(() => {
     if (isListening) {
@@ -65,19 +111,33 @@ export default function AssistantPage() {
       setIsListening(false);
       return;
     }
-    setIsListening(true);
-    const stop = listenOnce(
-      (text) => {
-        setIsListening(false);
-        setInput(text);
-      },
-      () => {
-        setIsListening(false);
-        setInput('Voice recognition is not supported in this browser — try Chrome or type your message.');
-      },
-    );
-    stopListenRef.current = stop;
-  }, [isListening]);
+    startListening();
+  }, [isListening, startListening]);
+
+  const toggleConversationMode = useCallback(() => {
+    if (conversationMode) {
+      conversationModeRef.current = false;
+      setConversationMode(false);
+      stopListenRef.current?.();
+      setIsListening(false);
+    } else {
+      conversationModeRef.current = true;
+      setConversationMode(true);
+      const reply: ChatMessage = {
+        id: generateId(), role: 'assistant',
+        content: "Conversation mode on. I'll keep listening after each reply — say \"stop\" or tap the mic button to end it.",
+        timestamp: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, reply]);
+      saveChatMessage(reply);
+      if (voiceEnabled) {
+        setIsSpeaking(true);
+        speak(reply.content, () => { setIsSpeaking(false); startListening(); });
+      } else {
+        startListening();
+      }
+    }
+  }, [conversationMode, voiceEnabled, startListening]);
 
   const handleClear = useCallback(() => {
     clearChatHistory();
@@ -97,11 +157,18 @@ export default function AssistantPage() {
           <div>
             <div style={{ color: 'var(--primary)', fontSize: 18, fontWeight: 700, letterSpacing: 2 }}>{ASSISTANT_NAME}</div>
             <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>
-              {isListening ? 'Listening...' : isProcessing ? 'Thinking...' : isSpeaking ? 'Speaking...' : 'Ready'}
+              {isListening ? 'Listening...' : isProcessing ? 'Thinking...' : isSpeaking ? 'Speaking...' : conversationMode ? 'Conversation mode' : 'Ready'}
             </div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={toggleConversationMode}
+            title="Hands-free conversation mode"
+            style={{ ...iconBtnStyle, background: conversationMode ? Colors.primaryGlow : 'transparent', borderRadius: 8 }}
+          >
+            <Repeat size={20} color={conversationMode ? Colors.primary : Colors.textMuted} />
+          </button>
           <button onClick={isSpeaking ? handleStopSpeak : () => setVoiceEnabled(v => !v)} style={iconBtnStyle}>
             {isSpeaking ? <StopCircle size={20} color={Colors.primary} /> : voiceEnabled ? <Volume2 size={20} color={Colors.primary} /> : <VolumeX size={20} color={Colors.textMuted} />}
           </button>
@@ -142,7 +209,9 @@ export default function AssistantPage() {
         </button>
       </div>
       <p style={{ textAlign: 'center', color: 'var(--text-dim)', fontSize: 11, marginTop: 8 }}>
-        Tap the mic and speak, or type your command
+        {conversationMode
+          ? 'Conversation mode is on — just talk, say "stop" to end it'
+          : `Tap the mic to talk, or tap ${'↻'} for hands-free conversation mode`}
       </p>
     </HUDShell>
   );
@@ -167,6 +236,21 @@ function Bubble({ message }: { message: ChatMessage }) {
         }}
       >
         <div style={{ fontSize: 14, lineHeight: 1.5 }}>{message.content}</div>
+        {message.action && (
+          <a
+            href={message.action.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              marginTop: 8, display: 'flex', alignItems: 'center', gap: 6,
+              background: Colors.primary, color: Colors.background, borderRadius: 10,
+              padding: '8px 12px', fontSize: 13, fontWeight: 600, textDecoration: 'none', width: 'fit-content',
+            }}
+          >
+            {message.action.type === 'call' ? <PhoneCall size={14} /> : <MessageCircle size={14} />}
+            {message.action.label}
+          </a>
+        )}
         <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>{time}</div>
       </div>
     </div>

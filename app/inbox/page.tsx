@@ -6,7 +6,7 @@ import HUDShell from '../../components/HUDShell';
 import GlassCard from '../../components/GlassCard';
 import { Colors } from '../../lib/theme';
 import { EmailItem, TextItem } from '../../lib/storage';
-import { getEmails, getTexts, addEmail, addText, markEmailRead, markTextRead, deleteEmail, deleteText, seedDemoInboxIfEmpty } from '../../lib/inbox';
+import { getEmails, getTexts, addEmail, addText, markEmailRead, markTextRead, deleteEmail, deleteText, removeLegacyDemoDataIfPresent } from '../../lib/inbox';
 
 type Tab = 'emails' | 'texts';
 
@@ -29,7 +29,7 @@ export default function InboxPage() {
   const [body, setBody] = useState('');
 
   const load = useCallback(() => {
-    seedDemoInboxIfEmpty();
+    removeLegacyDemoDataIfPresent();
     setEmails(getEmails());
     setTexts(getTexts());
   }, []);

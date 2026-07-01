@@ -9,7 +9,7 @@ import { Colors, Spacing, FontSize, FontWeight, BorderRadius } from '../../const
 import {
   ASSISTANT_NAME, ASSISTANT_FULL_NAME, STORAGE_KEYS, DEFAULT_SETTINGS,
 } from '../../constants/config';
-import { Storage, UserProfile, AppSettings } from '../../services/storage';
+import { Storage, UserProfile, AppSettings, Contact } from '../../services/storage';
 import {
   scheduleSmartReminders, cancelAllNotifications,
   scheduleBibleVerseNotifications, cancelBibleVerseNotifications,
@@ -18,6 +18,7 @@ import {
   getLiturgicalSeason, getLiturgicalSeasonLabel, checkFeastDay,
   getRandomVerseForToday, BibleLanguage,
 } from '../../services/bible';
+import { getContacts, addContact, deleteContact } from '../../services/contacts';
 import GlassCard from '../../components/GlassCard';
 
 const SPORT_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -38,6 +39,11 @@ export default function SettingsScreen() {
   const [biblePreviewRef, setBiblePreviewRef] = useState('');
   const [seasonLabel, setSeasonLabel] = useState('');
   const [feastDay, setFeastDay] = useState<string | null>(null);
+
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
 
   const load = useCallback(async () => {
     const [prof, sett] = await Promise.all([
@@ -64,9 +70,23 @@ export default function SettingsScreen() {
     setBiblePreviewRef(verse.reference);
     setSeasonLabel(getLiturgicalSeasonLabel(getLiturgicalSeason(), currentLang));
     setFeastDay(checkFeastDay());
+    setContacts(await getContacts());
   }, []);
 
   useEffect(() => { load(); }, []);
+
+  const saveContact = useCallback(async () => {
+    if (!contactName.trim() || !contactPhone.trim()) return;
+    await addContact({ name: contactName.trim(), phone: contactPhone.trim() });
+    setContacts(await getContacts());
+    setContactName(''); setContactPhone('');
+    setShowContactModal(false);
+  }, [contactName, contactPhone]);
+
+  const removeContact = useCallback(async (id: string) => {
+    await deleteContact(id);
+    setContacts(await getContacts());
+  }, []);
 
   // Refresh verse preview when language changes
   useEffect(() => {
@@ -200,7 +220,7 @@ export default function SettingsScreen() {
             'KAIROS speaks responses aloud')}
           {settingRow('Wake Word Detection', settings.wakeWordEnabled,
             v => updateSettings({ wakeWordEnabled: v }),
-            'Say "Hey KAIROS" to activate')}
+            'Recognises "Hey KAIROS" while you\'re talking to the mic — not a passive background listener (no app can listen while your phone is locked or the app is closed)')}
         </GlassCard>
 
         {/* Daily Schedule */}
@@ -253,6 +273,34 @@ export default function SettingsScreen() {
               maxLength={5}
             />
           </View>
+        </GlassCard>
+
+        {/* Contacts */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, { marginTop: 0, marginBottom: 0 }]}>Contacts</Text>
+          <TouchableOpacity style={styles.addContactBtn} onPress={() => setShowContactModal(true)}>
+            <Ionicons name="add" size={16} color={Colors.primary} />
+            <Text style={styles.addContactText}>Add</Text>
+          </TouchableOpacity>
+        </View>
+        <GlassCard>
+          {contacts.length === 0 ? (
+            <Text style={styles.settingDesc}>
+              No contacts yet. Add one so KAIROS can call or WhatsApp them for you — say &quot;call Mom&quot; or &quot;whatsapp Mom happy birthday&quot;.
+            </Text>
+          ) : (
+            contacts.map((c, i) => (
+              <View key={c.id} style={[styles.contactRow, i < contacts.length - 1 && styles.contactRowBorder]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.settingLabel}>{c.name}</Text>
+                  <Text style={styles.settingDesc}>{c.phone}</Text>
+                </View>
+                <TouchableOpacity onPress={() => removeContact(c.id)}>
+                  <Ionicons name="trash-outline" size={16} color={Colors.error} />
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
         </GlassCard>
 
         {/* ─── Catholic Bible ─────────────────────────────────────── */}
@@ -409,6 +457,47 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Add Contact Modal */}
+      <Modal visible={showContactModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Add Contact</Text>
+            <Text style={styles.modalNote}>
+              Include the country code (e.g. +49 for Germany) so WhatsApp and calling links work correctly.
+            </Text>
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Name</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g. Mom"
+                placeholderTextColor={Colors.textMuted}
+                value={contactName}
+                onChangeText={setContactName}
+              />
+            </View>
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Phone (with country code)</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="+491701234567"
+                placeholderTextColor={Colors.textMuted}
+                value={contactPhone}
+                onChangeText={setContactPhone}
+                keyboardType="phone-pad"
+              />
+            </View>
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowContactModal(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmBtn} onPress={saveContact}>
+                <Text style={styles.confirmText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </HUDBackground>
   );
 }
@@ -462,6 +551,15 @@ const styles = StyleSheet.create({
   dayChipActive: { backgroundColor: Colors.primaryGlow, borderColor: Colors.primary },
   dayText: { color: Colors.textMuted, fontSize: FontSize.xs, fontWeight: FontWeight.medium },
   dayTextActive: { color: Colors.primary },
+
+  sectionHeaderRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginTop: Spacing.lg, marginBottom: Spacing.sm,
+  },
+  addContactBtn: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  addContactText: { color: Colors.primary, fontSize: FontSize.sm, fontWeight: FontWeight.medium },
+  contactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.sm },
+  contactRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border + '55' },
 
   // Bible styles
   biblePreviewCard: { marginBottom: Spacing.sm, gap: Spacing.sm },

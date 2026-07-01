@@ -113,11 +113,18 @@ export interface TextItem {
   read: boolean;
 }
 
+export interface Contact {
+  id: string;
+  name: string;
+  phone: string; // include country code, e.g. +491701234567
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  action?: { type: 'whatsapp' | 'call'; href: string; label: string };
 }
 
 export interface AppSettings {

@@ -13,6 +13,8 @@ export const STORAGE_KEYS = {
   EMAILS: 'kairos_emails',
   MESSAGES: 'kairos_messages',
   INBOX_SEEDED: 'kairos_inbox_seeded',
+  DEMO_DATA_REMOVED: 'kairos_demo_data_removed_v1',
+  CONTACTS: 'kairos_contacts',
 };
 
 export const DEFAULT_SETTINGS = {

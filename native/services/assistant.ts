@@ -1,6 +1,13 @@
 import { Storage, Appointment, Reminder, ChatMessage, UserProfile } from './storage';
 import { STORAGE_KEYS, GREETINGS, ASSISTANT_NAME } from '../constants/config';
 import type { BibleLanguage, VerseTheme } from './bible';
+import { findContactByNamePrefix, findContactByName } from './contacts';
+import { buildWhatsAppAction, buildCallAction, applyEmojiShorthand, AssistantAction } from './actions';
+
+export interface AssistantReply {
+  text: string;
+  action?: AssistantAction;
+}
 
 function getTimeOfDay(): 'morning' | 'afternoon' | 'evening' | 'night' {
   const hour = new Date().getHours();
@@ -101,35 +108,97 @@ export async function getDailyBrief(): Promise<string> {
   return brief;
 }
 
-export async function processUserInput(input: string): Promise<string> {
-  const lower = input.toLowerCase().trim();
+// Strips a leading trigger phrase and, if what follows starts with a saved
+// contact's name, returns the contact plus whatever text trails it (the
+// message body, for WhatsApp — empty for a plain call).
+async function matchContactCommand(original: string, triggers: RegExp[]): Promise<{ name: string; rest: string } | null> {
+  for (const trigger of triggers) {
+    const m = original.match(trigger);
+    if (!m) continue;
+    const afterTrigger = m[1]?.trim();
+    if (!afterTrigger) continue;
+    const found = await findContactByNamePrefix(afterTrigger);
+    if (found) return { name: found.contact.name, rest: found.rest };
+  }
+  return null;
+}
+
+export async function processUserInput(input: string): Promise<AssistantReply> {
+  const trimmed = input.trim();
+  const lower = trimmed.toLowerCase();
+
+  // ─── Call a contact ───────────────────────────────────────────────────
+  const callMatch = await matchContactCommand(trimmed, [
+    /^call\s+(.+)$/i,
+    /^dial\s+(.+)$/i,
+    /^phone\s+(.+)$/i,
+  ]);
+  if (callMatch) {
+    const full = await findContactByName(callMatch.name);
+    if (full) {
+      return {
+        text: `Calling ${full.name}. Tap below to connect — I can prep the call, but you'll need to confirm it, same as Siri or Google Assistant would ask.`,
+        action: buildCallAction(full.phone, full.name),
+      };
+    }
+  }
+  if (/^(call|dial|phone)\s+/i.test(lower)) {
+    const name = trimmed.replace(/^(call|dial|phone)\s+/i, '').trim();
+    return { text: `I don't have a contact named "${name}" saved. Add them in Settings → Contacts with their phone number first.` };
+  }
+
+  // ─── Send a WhatsApp message ──────────────────────────────────────────
+  const waMatch = await matchContactCommand(trimmed, [
+    /^send\s+(?:a\s+)?whatsapp(?:\s+message)?\s+to\s+(.+)$/i,
+    /^whatsapp\s+(.+)$/i,
+    /^message\s+(.+)$/i,
+    /^text\s+(.+)$/i,
+  ]);
+  if (waMatch) {
+    const full = await findContactByName(waMatch.name);
+    if (full && waMatch.rest) {
+      return {
+        text: `Ready to send to ${full.name} via WhatsApp: "${applyEmojiShorthand(waMatch.rest)}" — tap below to open it and hit send.`,
+        action: buildWhatsAppAction(full.phone, full.name, waMatch.rest),
+      };
+    }
+    if (full && !waMatch.rest) {
+      return { text: `What should I say to ${full.name}?` };
+    }
+  }
+  if (/^(send\s+(?:a\s+)?whatsapp(?:\s+message)?\s+to|whatsapp)\s+/i.test(lower)) {
+    return { text: "I don't have that contact saved yet. Add them in Settings → Contacts with their phone number, then ask again." };
+  }
+  if (/\bsticker\b/i.test(lower) && (lower.includes('whatsapp') || lower.includes('send'))) {
+    return { text: "I can prep a WhatsApp text message with emoji for you, but there's no way to pre-attach a sticker through WhatsApp's link format — you'd need to add that yourself once the chat opens." };
+  }
 
   // Greetings
   if (/^(hi|hello|hey|what's up|sup|howdy|hallo|guten)/i.test(lower)) {
-    return await getGreeting();
+    return { text: await getGreeting() };
   }
 
   // Time
   if (lower.includes('what time') || lower.includes('current time') || lower.includes('wie spät')) {
     const now = new Date();
-    return `It is currently ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`;
+    return { text: `It is currently ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.` };
   }
 
   // Date
   if (lower.includes('what day') || lower.includes("today's date") || lower.includes('what date') || lower.includes('welcher tag') || lower.includes('welches datum')) {
-    return `Today is ${formatDate(new Date().toISOString())}.`;
+    return { text: `Today is ${formatDate(new Date().toISOString())}.` };
   }
 
   // Schedule
   if (lower.includes('schedule') || lower.includes('appointments') || lower.includes('what do i have') || lower.includes('termine')) {
-    return await getDailyBrief();
+    return { text: await getDailyBrief() };
   }
 
   // Sleep
   if (lower.includes('sleep') || lower.includes('bedtime') || lower.includes('schlafen')) {
     const profile = await Storage.loadSecure<UserProfile>(STORAGE_KEYS.USER_PROFILE);
     const sleepTime = profile?.sleepTime ?? '23:00';
-    return `Your sleep schedule is set for ${sleepTime}. Good rest is essential for peak performance.`;
+    return { text: `Your sleep schedule is set for ${sleepTime}. Good rest is essential for peak performance.` };
   }
 
   // Sport
@@ -137,7 +206,7 @@ export async function processUserInput(input: string): Promise<string> {
     const profile = await Storage.loadSecure<UserProfile>(STORAGE_KEYS.USER_PROFILE);
     const days = profile?.sportDays?.join(', ') ?? 'Monday, Wednesday, Friday';
     const time = profile?.sportTime ?? '18:00';
-    return `Your workout schedule: ${days} at ${time}. Consistency is key to peak physical performance.`;
+    return { text: `Your workout schedule: ${days} at ${time}. Consistency is key to peak physical performance.` };
   }
 
   // ─── Bible / Scripture — context-aware ───────────────────────────────────
@@ -201,7 +270,7 @@ export async function processUserInput(input: string): Promise<string> {
         : `${getLiturgicalSeasonLabel(season, lang)}.${feastNote}`;
     }
 
-    return `${intro}\n\n${q}${verse.text}${qc}\n— ${verse.reference}`;
+    return { text: `${intro}\n\n${q}${verse.text}${qc}\n— ${verse.reference}` };
   }
 
   // Emails
@@ -210,12 +279,14 @@ export async function processUserInput(input: string): Promise<string> {
     const emails = await getEmails();
     const unread = emails.filter(e => !e.read);
     if (unread.length === 0) {
-      return emails.length === 0
-        ? "No emails logged yet. Add one in the Inbox tab and I'll be able to summarise and search them for you."
-        : 'No unread emails — your inbox is caught up.';
+      return {
+        text: emails.length === 0
+          ? "No emails logged yet. Add one in the Inbox tab and I'll be able to summarise and search them for you."
+          : 'No unread emails — your inbox is caught up.',
+      };
     }
     const top = unread.slice(0, 3).map(e => `${e.from}: "${e.subject}"`).join('; ');
-    return `You have ${unread.length} unread email${unread.length > 1 ? 's' : ''}. ${top}${unread.length > 3 ? ', and more' : ''}. Check the Inbox tab for full details.`;
+    return { text: `You have ${unread.length} unread email${unread.length > 1 ? 's' : ''}. ${top}${unread.length > 3 ? ', and more' : ''}. Check the Inbox tab for full details.` };
   }
 
   // Texts / messages
@@ -224,47 +295,49 @@ export async function processUserInput(input: string): Promise<string> {
     const texts = await getTexts();
     const unread = texts.filter(t => !t.read);
     if (unread.length === 0) {
-      return texts.length === 0
-        ? "No texts logged yet. Add one in the Inbox tab and I'll be able to reference them for you."
-        : 'No unread texts — you\'re all caught up.';
+      return {
+        text: texts.length === 0
+          ? "No texts logged yet. Add one in the Inbox tab and I'll be able to reference them for you."
+          : 'No unread texts — you\'re all caught up.',
+      };
     }
     const top = unread.slice(0, 3).map(t => `${t.from}: "${t.message}"`).join('; ');
-    return `You have ${unread.length} unread text${unread.length > 1 ? 's' : ''}. ${top}${unread.length > 3 ? ', and more' : ''}.`;
+    return { text: `You have ${unread.length} unread text${unread.length > 1 ? 's' : ''}. ${top}${unread.length > 3 ? ', and more' : ''}.` };
   }
 
   // Stocks
   if (lower.includes('stock') || lower.includes('market') || lower.includes('trade') || lower.includes('invest') || lower.includes('aktie')) {
-    return "I can analyse your watchlist stocks and show market trends in the Stocks tab. Note: TradeRepublic has no public trading API, so I provide analysis signals for your manual decisions.";
+    return { text: "I can analyse your watchlist stocks and show market trends in the Stocks tab. Note: TradeRepublic has no public trading API, so I provide analysis signals for your manual decisions." };
   }
 
   // Store hours
   if (lower.includes('store') || lower.includes('shop') || lower.includes('open') || lower.includes('hours') || lower.includes('laden') || lower.includes('öffnungszeiten')) {
-    return "To check store hours, go to the Schedule tab. I'll show opening times for stores near you — make sure location access is enabled.";
+    return { text: "To check store hours, go to the Schedule tab. I'll show opening times for stores near you — make sure location access is enabled." };
   }
 
   // Reminder
   if (lower.includes('remind me') || lower.includes('set reminder') || lower.includes('erinnerung')) {
-    return "Head to the Schedule tab and tap + to add a reminder, or tell me: 'Remind me to [task] at [time]'.";
+    return { text: "Head to the Schedule tab and tap + to add a reminder, or tell me: 'Remind me to [task] at [time]'." };
   }
 
   // Appointment
   if (lower.includes('appointment') || lower.includes('meeting') || lower.includes('add event') || lower.includes('termin')) {
-    return "Head to the Schedule tab and tap + to add an appointment with title, date and time.";
+    return { text: "Head to the Schedule tab and tap + to add an appointment with title, date and time." };
   }
 
   // Weather
   if (lower.includes('weather') || lower.includes('wetter')) {
-    return "I don't have live weather data configured yet. Add a weather API key in Settings to enable this feature.";
+    return { text: "I don't have live weather data configured yet. Add a weather API key in Settings to enable this feature." };
   }
 
   // Daily brief
   if (lower.includes('brief') || lower.includes('overview') || lower.includes('summary') || lower.includes('my day') || lower.includes('mein tag')) {
-    return await getDailyBrief();
+    return { text: await getDailyBrief() };
   }
 
   // Capabilities
   if (lower.includes('what can you do') || lower.includes('help') || lower.includes('capabilities') || lower.includes('was kannst du')) {
-    return `I'm ${ASSISTANT_NAME} — your personal intelligence assistant. I can: manage appointments and reminders, give daily briefings, track workouts, summarise your emails and texts, analyse markets, send smart notifications, share Bible verses for any occasion, and respond to your voice commands. Just ask — in English or German.`;
+    return { text: `I'm ${ASSISTANT_NAME} — your personal intelligence assistant. I can: manage appointments and reminders, give daily briefings, track workouts, summarise your emails and texts, analyse markets, call or WhatsApp a saved contact, send smart notifications, share Bible verses for any occasion, and respond to your voice commands. Just ask — in English or German.` };
   }
 
   const responses = [
@@ -272,7 +345,7 @@ export async function processUserInput(input: string): Promise<string> {
     "I'm here. Try asking about your schedule, a Bible verse, your stocks, or set a reminder.",
     "Got it — I'm not sure exactly what you need yet. What can I help you with?",
   ];
-  return randomFrom(responses);
+  return { text: randomFrom(responses) };
 }
 
 export async function saveChatMessage(message: ChatMessage): Promise<void> {

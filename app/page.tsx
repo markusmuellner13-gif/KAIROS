@@ -10,7 +10,7 @@ import { Colors } from '../lib/theme';
 import { ASSISTANT_NAME, STORAGE_KEYS } from '../lib/config';
 import { Storage, Appointment, UserProfile } from '../lib/storage';
 import { getGreeting, getDailyBrief } from '../lib/assistant';
-import { getUnreadCounts, seedDemoInboxIfEmpty } from '../lib/inbox';
+import { getUnreadCounts, removeLegacyDemoDataIfPresent } from '../lib/inbox';
 import { speak, stopSpeaking } from '../lib/voice';
 
 export default function DashboardPage() {
@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const [unreadCounts, setUnreadCounts] = useState({ emails: 0, texts: 0 });
 
   const loadData = useCallback(() => {
-    seedDemoInboxIfEmpty();
+    removeLegacyDemoDataIfPresent();
     setGreeting(getGreeting());
     setBrief(getDailyBrief());
     setProfile(Storage.loadSecure<UserProfile>(STORAGE_KEYS.USER_PROFILE));

@@ -84,37 +84,23 @@ export async function getInboxBrief(): Promise<string> {
   return `You have ${parts.join(' and ')}.`;
 }
 
-// Seeds a handful of realistic demo entries on first launch so the Inbox
-// isn't empty before the user has logged anything — purely illustrative,
-// clearly editable/removable, and never presented as live-synced data.
-export async function seedDemoInboxIfEmpty(): Promise<void> {
-  const alreadySeeded = await Storage.load<boolean>(STORAGE_KEYS.INBOX_SEEDED);
-  if (alreadySeeded) return;
+// One-time cleanup: earlier builds auto-seeded a few illustrative demo
+// entries (from "IT Support", "Amazon", "Mom") so the Inbox wouldn't look
+// empty on first launch. That was confusing — it read as real data. This
+// strips those exact entries out for anyone who already has them, once,
+// and nothing seeds fake data going forward.
+const DEMO_EMAIL_SUBJECTS = new Set(['Password expiry notice', 'Your order has shipped']);
+const DEMO_TEXT_SIGNATURE = 'Dinner Sunday at 6? Let me know 💛';
 
-  const [emails, texts] = await Promise.all([getEmails(), getTexts()]);
-  if (emails.length === 0) {
-    const now = Date.now();
-    await Storage.save(STORAGE_KEYS.EMAILS, [
-      {
-        id: generateId(), from: 'IT Support', subject: 'Password expiry notice',
-        preview: 'Your workspace password will expire in 5 days. Update it to avoid interruption.',
-        receivedAt: new Date(now - 1000 * 60 * 40).toISOString(), read: false, important: true,
-      },
-      {
-        id: generateId(), from: 'Amazon', subject: 'Your order has shipped',
-        preview: 'Package arriving tomorrow between 10am–2pm.',
-        receivedAt: new Date(now - 1000 * 60 * 60 * 5).toISOString(), read: false,
-      },
-    ] as EmailItem[]);
-  }
-  if (texts.length === 0) {
-    const now = Date.now();
-    await Storage.save(STORAGE_KEYS.MESSAGES, [
-      {
-        id: generateId(), from: 'Mom', message: 'Dinner Sunday at 6? Let me know 💛',
-        receivedAt: new Date(now - 1000 * 60 * 25).toISOString(), read: false,
-      },
-    ] as TextItem[]);
-  }
-  await Storage.save(STORAGE_KEYS.INBOX_SEEDED, true);
+export async function removeLegacyDemoDataIfPresent(): Promise<void> {
+  const alreadyCleaned = await Storage.load<boolean>(STORAGE_KEYS.DEMO_DATA_REMOVED);
+  if (alreadyCleaned) return;
+
+  const emails = (await getEmails()).filter(e => !DEMO_EMAIL_SUBJECTS.has(e.subject));
+  await Storage.save(STORAGE_KEYS.EMAILS, emails);
+
+  const texts = (await getTexts()).filter(t => t.message !== DEMO_TEXT_SIGNATURE);
+  await Storage.save(STORAGE_KEYS.MESSAGES, texts);
+
+  await Storage.save(STORAGE_KEYS.DEMO_DATA_REMOVED, true);
 }

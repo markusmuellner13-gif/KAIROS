@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { User, Pencil, ShieldCheck, Globe2, Trash2, BookOpen } from 'lucide-react';
+import { User, Pencil, ShieldCheck, Globe2, Trash2, BookOpen, Users, Plus } from 'lucide-react';
 import HUDShell from '../../components/HUDShell';
 import GlassCard from '../../components/GlassCard';
 import { Colors } from '../../lib/theme';
 import { ASSISTANT_FULL_NAME, STORAGE_KEYS, DEFAULT_SETTINGS } from '../../lib/config';
-import { Storage, UserProfile, AppSettings } from '../../lib/storage';
+import { Storage, UserProfile, AppSettings, Contact } from '../../lib/storage';
 import { getLiturgicalSeason, getLiturgicalSeasonLabel, checkFeastDay, getRandomVerseForToday, BibleLanguage } from '../../lib/bible';
+import { getContacts, addContact, deleteContact } from '../../lib/contacts';
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -22,6 +23,11 @@ export default function SettingsPage() {
   const [biblePreviewRef, setBiblePreviewRef] = useState('');
   const [seasonLabel, setSeasonLabel] = useState('');
   const [feastDay, setFeastDay] = useState<string | null>(null);
+
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
 
   const refreshBible = useCallback((lang: BibleLanguage) => {
     const verse = getRandomVerseForToday(lang);
@@ -43,7 +49,21 @@ export default function SettingsPage() {
     }
     setSettings(sett);
     refreshBible(sett.bibleLanguage ?? 'en');
+    setContacts(getContacts());
   }, [refreshBible]);
+
+  const saveContact = () => {
+    if (!contactName.trim() || !contactPhone.trim()) return;
+    addContact({ name: contactName.trim(), phone: contactPhone.trim() });
+    setContacts(getContacts());
+    setContactName(''); setContactPhone('');
+    setShowContactModal(false);
+  };
+
+  const removeContact = (id: string) => {
+    deleteContact(id);
+    setContacts(getContacts());
+  };
 
   const updateSettings = (partial: Partial<AppSettings>) => {
     const updated = { ...settings, ...partial };
@@ -99,6 +119,32 @@ export default function SettingsPage() {
       <GlassCard style={{ marginBottom: 20 }}>
         <SettingRow label="Voice Responses" desc="KAIROS speaks replies aloud" value={settings.voiceEnabled} onChange={v => updateSettings({ voiceEnabled: v })} />
         <SettingRow label="Browser Notifications" desc="Ask permission for reminder alerts" value={settings.notificationsEnabled} onChange={v => updateSettings({ notificationsEnabled: v })} last />
+      </GlassCard>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <SectionTitle icon={<Users size={13} color={Colors.primary} />} style={{ marginBottom: 0 }}>Contacts</SectionTitle>
+        <button onClick={() => setShowContactModal(true)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: Colors.primary, display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+          <Plus size={14} /> Add
+        </button>
+      </div>
+      <GlassCard style={{ marginBottom: 20 }}>
+        {contacts.length === 0 ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+            No contacts yet. Add one so KAIROS can call or WhatsApp them for you — say &quot;call Mom&quot; or &quot;whatsapp Mom happy birthday&quot;.
+          </div>
+        ) : (
+          contacts.map((c, i) => (
+            <div key={c.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: i < contacts.length - 1 ? '1px solid rgba(42,48,80,0.4)' : 'none' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 500 }}>{c.name}</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{c.phone}</div>
+              </div>
+              <button onClick={() => removeContact(c.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                <Trash2 size={16} color={Colors.error} />
+              </button>
+            </div>
+          ))
+        )}
       </GlassCard>
 
       <SectionTitle icon={<BookOpen size={13} color={Colors.accent} />}>Catholic Bible</SectionTitle>
@@ -166,6 +212,25 @@ export default function SettingsPage() {
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setShowModal(false)}>Cancel</button>
               <button className="btn-primary" style={{ flex: 1 }} onClick={saveProfile}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showContactModal && (
+        <div className="modal-overlay" onClick={() => setShowContactModal(false)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div style={{ color: 'var(--primary)', fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Add Contact</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 12 }}>
+              Include the country code (e.g. +49 for Germany) so WhatsApp and calling links work correctly.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Field label="Name"><input className="input" placeholder="e.g. Mom" value={contactName} onChange={e => setContactName(e.target.value)} /></Field>
+              <Field label="Phone (with country code)"><input className="input" placeholder="+491701234567" value={contactPhone} onChange={e => setContactPhone(e.target.value)} /></Field>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setShowContactModal(false)}>Cancel</button>
+              <button className="btn-primary" style={{ flex: 1 }} onClick={saveContact}>Save</button>
             </div>
           </div>
         </div>
