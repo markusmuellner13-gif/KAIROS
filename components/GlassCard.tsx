@@ -1,39 +1,21 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, BorderRadius, Spacing } from '../constants/theme';
 
 interface Props {
   children: React.ReactNode;
-  style?: ViewStyle;
-  noPadding?: boolean;
-  glowing?: boolean;
+  glow?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+  onClick?: () => void;
 }
 
-export default function GlassCard({ children, style, noPadding, glowing }: Props) {
+export default function GlassCard({ children, glow, className = '', style, onClick }: Props) {
   return (
-    <View style={[styles.card, glowing && styles.glow, noPadding && styles.noPadding, style]}>
+    <div
+      className={`glass-card ${glow ? 'glow' : ''} ${className}`}
+      style={style}
+      onClick={onClick}
+    >
       {children}
-    </View>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.md,
-  },
-  glow: {
-    borderColor: Colors.primaryDim,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  noPadding: {
-    padding: 0,
-  },
-});
