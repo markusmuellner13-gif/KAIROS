@@ -100,6 +100,24 @@ export interface PortfolioItem {
   addedAt: string;
 }
 
+export interface EmailItem {
+  id: string;
+  from: string;
+  subject: string;
+  preview: string;
+  receivedAt: string;
+  read: boolean;
+  important?: boolean;
+}
+
+export interface TextItem {
+  id: string;
+  from: string;
+  message: string;
+  receivedAt: string;
+  read: boolean;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';

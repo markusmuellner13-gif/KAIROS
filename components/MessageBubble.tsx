@@ -17,7 +17,7 @@ export default function MessageBubble({ message }: Props) {
     <View style={[styles.container, isUser ? styles.userContainer : styles.assistantContainer]}>
       {!isUser && (
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>A</Text>
+          <Text style={styles.badgeText}>K</Text>
         </View>
       )}
       <View style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}>

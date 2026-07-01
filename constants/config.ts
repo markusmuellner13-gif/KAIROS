@@ -12,6 +12,9 @@ export const STORAGE_KEYS = {
   SETTINGS: 'kairos_settings',
   ROUTINE: 'kairos_routine',
   STORE_FAVORITES: 'kairos_store_favorites',
+  EMAILS: 'kairos_emails',
+  MESSAGES: 'kairos_messages',
+  INBOX_SEEDED: 'kairos_inbox_seeded',
 };
 
 export const NOTIFICATION_IDS = {

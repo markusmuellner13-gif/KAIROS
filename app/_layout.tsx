@@ -9,6 +9,7 @@ import { Colors } from '../constants/theme';
 import { Storage, AppSettings } from '../services/storage';
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '../constants/config';
 import { scheduleSmartReminders, requestNotificationPermissions } from '../services/notifications';
+import { seedDemoInboxIfEmpty } from '../services/inbox';
 
 // Keep the splash screen visible until we're ready
 SplashScreen.preventAutoHideAsync();
@@ -25,6 +26,7 @@ export default function RootLayout() {
   async function prepare() {
     try {
       await requestNotificationPermissions();
+      await seedDemoInboxIfEmpty();
       const settings = await Storage.load<AppSettings>(STORAGE_KEYS.SETTINGS);
       const activeSettings = settings ?? DEFAULT_SETTINGS;
 

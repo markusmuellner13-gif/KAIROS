@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   TextInput, Modal, Alert, RefreshControl, ViewStyle,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import HUDBackground from '../../components/HUDBackground';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSize, FontWeight, BorderRadius } from '../../constants/theme';
 import { STORAGE_KEYS } from '../../constants/config';
@@ -57,7 +57,7 @@ export default function ScheduleScreen() {
 
   const addAppointment = useCallback(async () => {
     if (!apptTitle.trim() || !apptDate.trim() || !apptTime.trim()) {
-      Alert.alert('ARIA', 'Please fill in title, date (YYYY-MM-DD), and time (HH:MM).');
+      Alert.alert('KAIROS', 'Please fill in title, date (YYYY-MM-DD), and time (HH:MM).');
       return;
     }
     const appt: Appointment = {
@@ -88,7 +88,7 @@ export default function ScheduleScreen() {
 
   const addReminder = useCallback(async () => {
     if (!remTitle.trim() || !remDatetime.trim()) {
-      Alert.alert('ARIA', 'Please fill in title and datetime (YYYY-MM-DDTHH:MM).');
+      Alert.alert('KAIROS', 'Please fill in title and datetime (YYYY-MM-DDTHH:MM).');
       return;
     }
     const rem: Reminder = {
@@ -123,7 +123,7 @@ export default function ScheduleScreen() {
   const done = reminders.filter(r => r.completed);
 
   return (
-    <LinearGradient colors={['#0A0E1A', '#0D1429', '#0A0E1A']} style={styles.gradient}>
+    <HUDBackground>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Schedule</Text>
@@ -292,12 +292,11 @@ export default function ScheduleScreen() {
           </View>
         </View>
       </Modal>
-    </LinearGradient>
+    </HUDBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.md, paddingTop: 56, paddingBottom: Spacing.md,

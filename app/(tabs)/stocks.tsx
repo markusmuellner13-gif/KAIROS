@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   TextInput, Modal, Alert, RefreshControl, ActivityIndicator,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import HUDBackground from '../../components/HUDBackground';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSize, FontWeight, BorderRadius } from '../../constants/theme';
 import { STORAGE_KEYS } from '../../constants/config';
@@ -87,7 +87,7 @@ export default function StocksScreen() {
     const sym = newSymbol.trim().toUpperCase();
     if (!sym) return;
     if (watchlist.some(w => w.symbol === sym)) {
-      Alert.alert('ARIA', `${sym} is already in your watchlist.`);
+      Alert.alert('KAIROS', `${sym} is already in your watchlist.`);
       return;
     }
     const item: StockWatchlistItem = { symbol: sym, name: sym, addedAt: new Date().toISOString() };
@@ -108,7 +108,7 @@ export default function StocksScreen() {
   const addToPortfolio = useCallback(async () => {
     const sym = portSymbol.trim().toUpperCase();
     if (!sym || !portShares || !portPrice) {
-      Alert.alert('ARIA', 'Please fill in symbol, shares, and average buy price.');
+      Alert.alert('KAIROS', 'Please fill in symbol, shares, and average buy price.');
       return;
     }
     const existing = portfolio.find(p => p.symbol === sym);
@@ -144,7 +144,7 @@ export default function StocksScreen() {
   const portfolioPnLPct = portfolioCost > 0 ? (portfolioPnL / portfolioCost) * 100 : 0;
 
   return (
-    <LinearGradient colors={['#0A0E1A', '#0D1429', '#0A0E1A']} style={styles.gradient}>
+    <HUDBackground>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Markets</Text>
@@ -352,12 +352,11 @@ export default function StocksScreen() {
           </View>
         </View>
       </Modal>
-    </LinearGradient>
+    </HUDBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.md, paddingTop: 56, paddingBottom: Spacing.sm,

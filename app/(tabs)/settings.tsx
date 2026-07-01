@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   TextInput, Switch, Alert, Modal,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import HUDBackground from '../../components/HUDBackground';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSize, FontWeight, BorderRadius } from '../../constants/theme';
 import {
@@ -165,7 +165,7 @@ export default function SettingsScreen() {
   );
 
   return (
-    <LinearGradient colors={['#0A0E1A', '#0D1429', '#0A0E1A']} style={styles.gradient}>
+    <HUDBackground>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Settings</Text>
       </View>
@@ -409,12 +409,11 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
-    </LinearGradient>
+    </HUDBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
   header: { paddingHorizontal: Spacing.md, paddingTop: 56, paddingBottom: Spacing.md },
   headerTitle: { color: Colors.text, fontSize: FontSize.xxl, fontWeight: FontWeight.bold },
   scroll: { flex: 1 },

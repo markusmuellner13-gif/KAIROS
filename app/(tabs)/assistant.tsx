@@ -3,7 +3,6 @@ import {
   View, Text, ScrollView, StyleSheet, TextInput,
   TouchableOpacity, KeyboardAvoidingView, Platform, Animated,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSize, FontWeight, BorderRadius } from '../../constants/theme';
 import { ASSISTANT_NAME } from '../../constants/config';
@@ -15,6 +14,7 @@ import {
 import { speak, stopSpeaking } from '../../services/voice';
 import MessageBubble from '../../components/MessageBubble';
 import KAIROSAvatar from '../../components/KAIROSAvatar';
+import HUDBackground from '../../components/HUDBackground';
 
 export default function AssistantScreen() {
   const scrollRef = useRef<ScrollView>(null);
@@ -32,7 +32,7 @@ export default function AssistantScreen() {
         const welcome: ChatMessage = {
           id: generateId(),
           role: 'assistant',
-          content: `Hello! I'm ${ASSISTANT_NAME} — your Artificial Reasoning Intelligence Assistant. I'm here to help you manage your day, check your schedule, analyse markets, and much more. Say or type anything to get started.`,
+          content: `Systems online. I'm ${ASSISTANT_NAME} — I have access to your schedule, inbox, and markets, and I'm ready to assist. Ask me for your daily brief, to check your emails or texts, set a reminder, review your portfolio, or ask for a word of Scripture. Say or type anything to get started.`,
           timestamp: new Date().toISOString(),
         };
         setMessages([welcome]);
@@ -121,7 +121,7 @@ export default function AssistantScreen() {
   }, []);
 
   return (
-    <LinearGradient colors={['#0A0E1A', '#0D1429', '#0A0E1A']} style={styles.gradient}>
+    <HUDBackground corners={false}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -213,12 +213,11 @@ export default function AssistantScreen() {
         {/* Wake word hint */}
         <Text style={styles.hint}>Say "Hey KAIROS" to activate voice commands</Text>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </HUDBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
   flex: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

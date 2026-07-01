@@ -62,6 +62,7 @@ export async function getDailyBrief(): Promise<string> {
   const appointments = (await Storage.load<Appointment[]>(STORAGE_KEYS.APPOINTMENTS)) ?? [];
   const reminders = (await Storage.load<Reminder[]>(STORAGE_KEYS.REMINDERS)) ?? [];
   const profile = await Storage.loadSecure<UserProfile>(STORAGE_KEYS.USER_PROFILE);
+  const { getInboxBrief } = await import('./inbox');
 
   const todayAppts = appointments.filter(a => isToday(`${a.date}T${a.time}`));
   const tomorrowAppts = appointments.filter(a => isTomorrow(`${a.date}T${a.time}`));
@@ -90,6 +91,11 @@ export async function getDailyBrief(): Promise<string> {
   const dayName = now.toLocaleDateString('en', { weekday: 'long' });
   if (sportDays.includes(dayName)) {
     brief += ` Today is a sport day — workout at ${profile?.sportTime ?? '18:00'}.`;
+  }
+
+  const inboxBrief = await getInboxBrief();
+  if (!inboxBrief.startsWith('Your inbox is clear')) {
+    brief += ` ${inboxBrief}`;
   }
 
   return brief;
@@ -198,6 +204,34 @@ export async function processUserInput(input: string): Promise<string> {
     return `${intro}\n\n${q}${verse.text}${qc}\n— ${verse.reference}`;
   }
 
+  // Emails
+  if (lower.includes('email') || lower.includes('e-mail') || lower.includes('mail') || lower.includes('inbox')) {
+    const { getEmails } = await import('./inbox');
+    const emails = await getEmails();
+    const unread = emails.filter(e => !e.read);
+    if (unread.length === 0) {
+      return emails.length === 0
+        ? "No emails logged yet. Add one in the Inbox tab and I'll be able to summarise and search them for you."
+        : 'No unread emails — your inbox is caught up.';
+    }
+    const top = unread.slice(0, 3).map(e => `${e.from}: "${e.subject}"`).join('; ');
+    return `You have ${unread.length} unread email${unread.length > 1 ? 's' : ''}. ${top}${unread.length > 3 ? ', and more' : ''}. Check the Inbox tab for full details.`;
+  }
+
+  // Texts / messages
+  if (lower.includes('text') || lower.includes('message') || lower.includes('sms') || lower.includes('nachricht')) {
+    const { getTexts } = await import('./inbox');
+    const texts = await getTexts();
+    const unread = texts.filter(t => !t.read);
+    if (unread.length === 0) {
+      return texts.length === 0
+        ? "No texts logged yet. Add one in the Inbox tab and I'll be able to reference them for you."
+        : 'No unread texts — you\'re all caught up.';
+    }
+    const top = unread.slice(0, 3).map(t => `${t.from}: "${t.message}"`).join('; ');
+    return `You have ${unread.length} unread text${unread.length > 1 ? 's' : ''}. ${top}${unread.length > 3 ? ', and more' : ''}.`;
+  }
+
   // Stocks
   if (lower.includes('stock') || lower.includes('market') || lower.includes('trade') || lower.includes('invest') || lower.includes('aktie')) {
     return "I can analyse your watchlist stocks and show market trends in the Stocks tab. Note: TradeRepublic has no public trading API, so I provide analysis signals for your manual decisions.";
@@ -230,7 +264,7 @@ export async function processUserInput(input: string): Promise<string> {
 
   // Capabilities
   if (lower.includes('what can you do') || lower.includes('help') || lower.includes('capabilities') || lower.includes('was kannst du')) {
-    return `I'm ${ASSISTANT_NAME} — your personal intelligence assistant. I can: manage appointments and reminders, give daily briefings, track workouts, analyse markets, send smart notifications, share Bible verses for any occasion, and respond to your voice commands. Just ask — in English or German.`;
+    return `I'm ${ASSISTANT_NAME} — your personal intelligence assistant. I can: manage appointments and reminders, give daily briefings, track workouts, summarise your emails and texts, analyse markets, send smart notifications, share Bible verses for any occasion, and respond to your voice commands. Just ask — in English or German.`;
   }
 
   const responses = [

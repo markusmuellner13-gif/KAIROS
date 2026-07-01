@@ -4,16 +4,17 @@ import {
   TouchableOpacity, Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSize, FontWeight, BorderRadius } from '../../constants/theme';
 import { ASSISTANT_NAME, STORAGE_KEYS } from '../../constants/config';
 import { Storage, Appointment, UserProfile } from '../../services/storage';
 import { getGreeting, getDailyBrief } from '../../services/assistant';
+import { getUnreadCounts } from '../../services/inbox';
 import { speak } from '../../services/voice';
 import GlassCard from '../../components/GlassCard';
 import KAIROSAvatar from '../../components/KAIROSAvatar';
 import QuickAction from '../../components/QuickAction';
+import HUDBackground from '../../components/HUDBackground';
 
 const { width } = Dimensions.get('window');
 
@@ -27,18 +28,21 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [avatarActive, setAvatarActive] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState({ emails: 0, texts: 0 });
 
   const loadData = useCallback(async () => {
-    const [greet, dailyBrief, prof, appts] = await Promise.all([
+    const [greet, dailyBrief, prof, appts, unread] = await Promise.all([
       getGreeting(),
       getDailyBrief(),
       Storage.loadSecure<UserProfile>(STORAGE_KEYS.USER_PROFILE),
       Storage.load<Appointment[]>(STORAGE_KEYS.APPOINTMENTS),
+      getUnreadCounts(),
     ]);
 
     setGreeting(greet);
     setBrief(dailyBrief);
     setProfile(prof);
+    setUnreadCounts(unread);
 
     const today = new Date().toDateString();
     const todayAppts = (appts ?? []).filter(
@@ -80,7 +84,7 @@ export default function DashboardScreen() {
   const isNearSleep = hour >= sleepH - 1;
 
   return (
-    <LinearGradient colors={['#0A0E1A', '#0D1429', '#0A0E1A']} style={styles.gradient}>
+    <HUDBackground>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -177,6 +181,29 @@ export default function DashboardScreen() {
           ))
         )}
 
+        {/* Inbox Widget */}
+        <TouchableOpacity activeOpacity={0.8} onPress={() => router.push('/(tabs)/inbox')}>
+          <GlassCard style={styles.inboxCard}>
+            <View style={styles.inboxIconWrap}>
+              <Ionicons name="mail-outline" size={20} color={Colors.primary} />
+              {(unreadCounts.emails + unreadCounts.texts) > 0 && (
+                <View style={styles.inboxBadge}>
+                  <Text style={styles.inboxBadgeText}>{unreadCounts.emails + unreadCounts.texts}</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.inboxInfo}>
+              <Text style={styles.inboxTitle}>Inbox</Text>
+              <Text style={styles.inboxSub}>
+                {unreadCounts.emails + unreadCounts.texts === 0
+                  ? 'All caught up'
+                  : `${unreadCounts.emails} unread email${unreadCounts.emails !== 1 ? 's' : ''} · ${unreadCounts.texts} unread text${unreadCounts.texts !== 1 ? 's' : ''}`}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+          </GlassCard>
+        </TouchableOpacity>
+
         {/* Quick Actions */}
         <View style={styles.sectionHeader}>
           <Ionicons name="flash-outline" size={16} color={Colors.primary} />
@@ -206,12 +233,11 @@ export default function DashboardScreen() {
 
         <View style={styles.bottom} />
       </ScrollView>
-    </LinearGradient>
+    </HUDBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
   scroll: { flex: 1 },
   content: { padding: Spacing.md, paddingTop: 56 },
   header: {
@@ -286,6 +312,19 @@ const styles = StyleSheet.create({
   apptTitle: { color: Colors.text, fontSize: FontSize.sm, fontWeight: FontWeight.medium },
   apptSub: { color: Colors.textMuted, fontSize: FontSize.xs },
   apptDot: { width: 8, height: 8, borderRadius: 4 },
+  inboxCard: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.md,
+  },
+  inboxIconWrap: { position: 'relative' },
+  inboxBadge: {
+    position: 'absolute', top: -4, right: -6,
+    backgroundColor: Colors.accent, borderRadius: BorderRadius.full,
+    minWidth: 15, height: 15, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
+  },
+  inboxBadgeText: { color: Colors.background, fontSize: 9, fontWeight: FontWeight.bold },
+  inboxInfo: { flex: 1 },
+  inboxTitle: { color: Colors.text, fontSize: FontSize.md, fontWeight: FontWeight.semibold },
+  inboxSub: { color: Colors.textMuted, fontSize: FontSize.xs, marginTop: 1 },
   actionsRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
   bottom: { height: Spacing.xxl },
 });
